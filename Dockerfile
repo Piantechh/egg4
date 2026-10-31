@@ -28,16 +28,9 @@ RUN apt-get update -o Acquire::Retries=5 \
     libssl-dev zlib1g-dev libbz2-dev \
     libreadline-dev libsqlite3-dev libncursesw5-dev \
     xz-utils tk-dev libffi-dev liblzma-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update -o Acquire::Retries=5 \
-    && apt-get install -y --no-install-recommends \
+    libgdbm-dev libnss3-dev uuid-dev \
     p7zip-full zstd ffmpeg imagemagick \
     graphicsmagick webp mediainfo \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update -o Acquire::Retries=5 \
-    && apt-get install -y --no-install-recommends \
     fonts-liberation fonts-noto-color-emoji \
     libfontconfig1 libfreetype6 \
     libasound2 libgbm1 libgtk-3-0 \
@@ -62,7 +55,8 @@ RUN case "$TARGETARCH" in \
     arm64) GO_ARCH=arm64 ;; \
     *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
     esac \
-    && wget -q "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" -O /tmp/go.tar.gz \
+    && wget -q "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" \
+    -O /tmp/go.tar.gz \
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && rm /tmp/go.tar.gz
 
@@ -75,7 +69,9 @@ RUN cd /tmp \
     && ln -sf /usr/local/bin/python3.13 /usr/local/bin/python3 \
     && ln -sf /usr/local/bin/pip3.13 /usr/local/bin/pip3 \
     && cd /tmp \
-    && rm -rf "Python-${PYTHON_VERSION}" Python.tgz
+    && rm -rf "Python-${PYTHON_VERSION}" Python.tgz \
+    && python3 --version \
+    && pip3 --version
 
 RUN case "$TARGETARCH" in \
     amd64) BUN_ARCH=x64 ;; \
@@ -88,15 +84,22 @@ RUN case "$TARGETARCH" in \
     && mkdir -p "${BUN_INSTALL}/bin" \
     && mv "bun-linux-${BUN_ARCH}/bun" "${BUN_INSTALL}/bin/bun" \
     && chmod +x "${BUN_INSTALL}/bin/bun" \
-    && rm -rf "bun-linux-${BUN_ARCH}" bun.zip
+    && rm -rf "bun-linux-${BUN_ARCH}" bun.zip \
+    && bun --version
 
-RUN apt-get update -o Acquire::Retries=5 \
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update -o Acquire::Retries=5 \
     && apt-get install -y --no-install-recommends nodejs \
+    && node --version \
+    && npm --version \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p "${PLAYWRIGHT_BROWSERS_PATH}" \
     && npm install -g playwright \
-    && npx playwright install --with-deps chromium \
+    && node --version \
+    && npm --version \
+    && playwright --version \
+    && playwright install --with-deps chromium \
     && chmod -R 777 "${PLAYWRIGHT_BROWSERS_PATH}"
 
 RUN useradd -m -d /home/container container \
