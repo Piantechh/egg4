@@ -1,3 +1,4 @@
+
 FROM debian:bookworm-slim
 
 LABEL author="piantech"
@@ -65,22 +66,16 @@ RUN case "$TARGETARCH" in \
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && rm /tmp/go.tar.gz
 
-RUN case "$TARGETARCH" in \
-    amd64) PY_ARCH=x86_64 ;; \
-    arm64) PY_ARCH=aarch64 ;; \
-    *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
-    esac \
-    && cd /tmp \
-    && wget -q "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz" \
-    -O Python.tgz \
-    && tar xzf Python.tgz \
-    && cd Python-${PYTHON_VERSION} \
-    && ./configure --enable-optimizations \
-    && make -j"$(nproc)" altinstall \
+RUN cd /tmp \
+    && wget -q "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz" -O Python.tgz \
+    && tar -xzf Python.tgz \
+    && cd "Python-${PYTHON_VERSION}" \
+    && ./configure --with-ensurepip=install \
+    && make -j2 altinstall \
     && ln -sf /usr/local/bin/python3.13 /usr/local/bin/python3 \
     && ln -sf /usr/local/bin/pip3.13 /usr/local/bin/pip3 \
     && cd /tmp \
-    && rm -rf Python-${PYTHON_VERSION} Python.tgz
+    && rm -rf "Python-${PYTHON_VERSION}" Python.tgz
 
 RUN case "$TARGETARCH" in \
     amd64) BUN_ARCH=x64 ;; \
@@ -88,17 +83,15 @@ RUN case "$TARGETARCH" in \
     *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
     esac \
     && cd /tmp \
-    && wget -q "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${BUN_ARCH}.zip" \
-    -O bun.zip \
+    && wget -q "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${BUN_ARCH}.zip" -O bun.zip \
     && unzip -q bun.zip \
     && mkdir -p "${BUN_INSTALL}/bin" \
     && mv "bun-linux-${BUN_ARCH}/bun" "${BUN_INSTALL}/bin/bun" \
     && chmod +x "${BUN_INSTALL}/bin/bun" \
-    && rm -rf bun-linux-${BUN_ARCH} bun.zip
+    && rm -rf "bun-linux-${BUN_ARCH}" bun.zip
 
 RUN apt-get update -o Acquire::Retries=5 \
-    && apt-get install -y --no-install-recommends \
-    nodejs \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p "${PLAYWRIGHT_BROWSERS_PATH}" \
